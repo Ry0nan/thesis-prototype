@@ -1,0 +1,15 @@
+venv/
+__pycache__/
+*.pyc
+
+# model weights
+*.pt
+*.pth
+
+# outputs
+outputs/
+runs/
+
+# OS junk
+.DS_Store
+Thumbs.db
