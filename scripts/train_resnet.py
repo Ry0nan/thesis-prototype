@@ -22,9 +22,25 @@ if torch.cuda.is_available():
 # =========================
 # CONFIG
 # =========================
-TRAIN_DIR = "../dataset/train"
+# Set MODE to control which training data is used:
+#   "baseline"  -> train on labeled 25% only (supervised baseline experiment)
+#   "ssl"       -> train on labeled + accumulated pseudo-labels (called by pseudo_label.py)
+#   "full"      -> train on full training set (upper-bound sanity check)
+MODE = "baseline"
+
+if MODE == "baseline":
+    TRAIN_DIR = "../dataset/train_labeled"
+    MODEL_SAVE_PATH = "../models/resnet_baseline.pth"
+elif MODE == "ssl":
+    TRAIN_DIR = "../dataset/train_labeled"  # gets dynamically expanded during SSL iterations
+    MODEL_SAVE_PATH = "../models/resnet_ssl.pth"
+elif MODE == "full":
+    TRAIN_DIR = "../dataset/train"
+    MODEL_SAVE_PATH = "../models/resnet_full.pth"
+else:
+    raise ValueError(f"Unknown MODE: {MODE}")
+
 VAL_DIR = "../dataset/val"
-MODEL_SAVE_PATH = "../models/resnet_kamias.pth"
 
 BATCH_SIZE = 8
 EPOCHS = 15
@@ -33,9 +49,12 @@ NUM_CLASSES = 3
 IMG_SIZE = 224
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Mode: {MODE}")
 print(f"Using device: {device}")
 if torch.cuda.is_available():
     print(f"GPU: {torch.cuda.get_device_name(0)}")
+print(f"Train dir: {TRAIN_DIR}")
+print(f"Save path: {MODEL_SAVE_PATH}\n")
 
 # =========================
 # TRANSFORMS
@@ -50,7 +69,7 @@ train_transform = transforms.Compose([
     transforms.RandomHorizontalFlip(),
     transforms.RandomVerticalFlip(),
     transforms.RandomRotation(20),
-    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+    transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3),
     transforms.ToTensor(),
     transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
 ])
@@ -64,13 +83,19 @@ val_transform = transforms.Compose([
 # =========================
 # LOAD DATA
 # =========================
+if not os.path.exists(TRAIN_DIR):
+    raise FileNotFoundError(
+        f"Training directory not found: {TRAIN_DIR}\n"
+        f"For MODE='baseline' or 'ssl', run prepare_ssl_split.py first."
+    )
+
 train_data = datasets.ImageFolder(TRAIN_DIR, transform=train_transform)
 val_data = datasets.ImageFolder(VAL_DIR, transform=val_transform)
 
 train_loader = DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
 val_loader = DataLoader(val_data, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
-print(f"\nClasses: {train_data.classes}")
+print(f"Classes: {train_data.classes}")
 print(f"Class-to-index: {train_data.class_to_idx}")
 print(f"Train samples: {len(train_data)}")
 print(f"Val samples: {len(val_data)}")
@@ -82,14 +107,14 @@ print(f"Train distribution: {distribution}")
 
 # =========================
 # CLASS WEIGHTS
-# Handles imbalance — critical for catching minor defects (your thesis claim).
+# Handles imbalance — critical for catching minor defects (the thesis claim).
 # =========================
 total_samples = sum(train_counts.values())
 class_weights = torch.tensor(
     [total_samples / (NUM_CLASSES * train_counts[i]) for i in range(NUM_CLASSES)],
     dtype=torch.float
 ).to(device)
-print(f"Class weights: {[f'{w:.3f}' for w in class_weights.tolist()]}")
+print(f"Class weights: {[f'{w:.3f}' for w in class_weights.tolist()]}\n")
 
 # =========================
 # MODEL
@@ -109,8 +134,11 @@ scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
 # =========================
 # TRAINING LOOP
 # =========================
-print("\nStarting training...\n")
+print("Starting training...\n")
 best_val_acc = 0.0
+
+# Make sure save directory exists
+os.makedirs(os.path.dirname(MODEL_SAVE_PATH), exist_ok=True)
 
 for epoch in range(EPOCHS):
     # ----- TRAIN -----

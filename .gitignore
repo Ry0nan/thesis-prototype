@@ -13,3 +13,13 @@ runs/
 # OS junk
 .DS_Store
 Thumbs.db
+
+dataset/
+
+# IDE
+.vscode/
+.idea/
+
+# Python
+*.egg-info/
+.pytest_cache/
