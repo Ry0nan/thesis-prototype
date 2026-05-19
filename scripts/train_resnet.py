@@ -22,17 +22,17 @@ if torch.cuda.is_available():
 # =========================
 # CONFIG
 # =========================
-# Set MODE to control which training data is used:
-#   "baseline"  -> train on labeled 25% only (supervised baseline experiment)
-#   "ssl"       -> train on labeled + accumulated pseudo-labels (called by pseudo_label.py)
-#   "full"      -> train on full training set (upper-bound sanity check)
+# MODE controls which training data is used:
+#   "baseline" -> labeled 25% only (supervised baseline)
+#   "ssl"      -> labeled + accumulated pseudo-labels (used by pseudo_label.py)
+#   "full"     -> full training set (upper-bound sanity check)
 MODE = "baseline"
 
 if MODE == "baseline":
     TRAIN_DIR = "../dataset/train_labeled"
     MODEL_SAVE_PATH = "../models/resnet_baseline.pth"
 elif MODE == "ssl":
-    TRAIN_DIR = "../dataset/train_labeled"  # gets dynamically expanded during SSL iterations
+    TRAIN_DIR = "../dataset/train_labeled"
     MODEL_SAVE_PATH = "../models/resnet_ssl.pth"
 elif MODE == "full":
     TRAIN_DIR = "../dataset/train"
@@ -45,7 +45,7 @@ VAL_DIR = "../dataset/val"
 BATCH_SIZE = 8
 EPOCHS = 15
 LEARNING_RATE = 0.001
-NUM_CLASSES = 3
+NUM_CLASSES = 2
 IMG_SIZE = 224
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -58,8 +58,7 @@ print(f"Save path: {MODEL_SAVE_PATH}\n")
 
 # =========================
 # TRANSFORMS
-# ImageNet normalization is REQUIRED for pretrained ResNet to work correctly.
-# Without this, predictions collapse onto one class.
+# ImageNet normalization is REQUIRED for pretrained ResNet.
 # =========================
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
@@ -100,14 +99,12 @@ print(f"Class-to-index: {train_data.class_to_idx}")
 print(f"Train samples: {len(train_data)}")
 print(f"Val samples: {len(val_data)}")
 
-# Class distribution check
 train_counts = Counter([label for _, label in train_data.samples])
 distribution = {train_data.classes[i]: train_counts[i] for i in range(NUM_CLASSES)}
 print(f"Train distribution: {distribution}")
 
 # =========================
 # CLASS WEIGHTS
-# Handles imbalance — critical for catching minor defects (the thesis claim).
 # =========================
 total_samples = sum(train_counts.values())
 class_weights = torch.tensor(
@@ -118,7 +115,6 @@ print(f"Class weights: {[f'{w:.3f}' for w in class_weights.tolist()]}\n")
 
 # =========================
 # MODEL
-# ResNet18 with ImageNet pretrained weights, final layer replaced for 3 classes.
 # =========================
 model = models.resnet18(weights="DEFAULT")
 model.fc = nn.Linear(model.fc.in_features, NUM_CLASSES)
@@ -137,11 +133,9 @@ scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
 print("Starting training...\n")
 best_val_acc = 0.0
 
-# Make sure save directory exists
 os.makedirs(os.path.dirname(MODEL_SAVE_PATH), exist_ok=True)
 
 for epoch in range(EPOCHS):
-    # ----- TRAIN -----
     model.train()
     total_loss = 0.0
     train_correct = 0
@@ -165,7 +159,6 @@ for epoch in range(EPOCHS):
     train_acc = 100 * train_correct / train_total
     avg_loss = total_loss / len(train_loader)
 
-    # ----- VALIDATE -----
     model.eval()
     val_correct = 0
     val_total = 0
@@ -187,7 +180,6 @@ for epoch in range(EPOCHS):
           f"Val Acc: {val_acc:.2f}% | "
           f"LR: {current_lr:.6f}")
 
-    # Save best model only
     if val_acc > best_val_acc:
         best_val_acc = val_acc
         torch.save(model.state_dict(), MODEL_SAVE_PATH)

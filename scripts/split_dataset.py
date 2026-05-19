@@ -1,21 +1,7 @@
 """
 Stratified 70/15/15 train/val/test split for the Kamias dataset.
-
-Handles two important concerns:
-1. Class balance — each split has proportional healthy/minor/major.
-2. Camera-source balance — each split has proportional Lumix/phone images
-   within each class, preventing the model from learning camera shortcuts.
-
-Also handles multi-shot fruits: if multiple photos exist of the same fruit
-(detected by close timestamps in filenames), they're grouped and assigned
-to the same split. This prevents train/test leakage.
-
-Output structure:
-    dataset/train/{healthy,minor,major}/
-    dataset/val/{healthy,minor,major}/
-    dataset/test/{healthy,minor,major}/
-
-Reproducibility: uses fixed random seed. Re-running produces identical splits.
+2-CLASS VERSION: healthy / defective
+Stratifies by class AND camera source. Source images in raw/ left untouched.
 """
 
 import os
@@ -29,53 +15,38 @@ from collections import defaultdict, Counter
 # =========================
 SOURCE_DIR = "../dataset/raw"
 DEST_DIR = "../dataset"
-CLASS_NAMES = ['healthy', 'minor', 'major']
+CLASS_NAMES = ['healthy', 'defective']
 IMAGE_EXTENSIONS = ('.jpg', '.jpeg', '.png')
 
-# Split ratios — must sum to 1.0
 TRAIN_RATIO = 0.70
 VAL_RATIO = 0.15
 TEST_RATIO = 0.15
 
-# Reproducibility — same seed gives identical splits across runs
 SEED = 42
 
-# Camera-source patterns (same as count_dataset.py)
 SOURCE_PATTERNS = {
     'phone_IMG': re.compile(r'^IMG_\d+', re.IGNORECASE),
     'lumix_P10': re.compile(r'^P\d{7}', re.IGNORECASE),
 }
 
-# Whether to wipe destination class folders before populating.
-# Safer to True — prevents stale images from previous splits contaminating new ones.
 CLEAR_DESTINATION = True
 
-# =========================
-# HELPERS
-# =========================
 def detect_source(filename):
-    """Identify camera source from filename pattern."""
     for source_name, pattern in SOURCE_PATTERNS.items():
         if pattern.match(filename):
             return source_name
     return 'other'
 
 def stratified_split(items, train_ratio, val_ratio, test_ratio):
-    """
-    Split a shuffled list into three parts by ratio.
-    Returns (train_list, val_list, test_list).
-    """
     n = len(items)
     n_train = int(n * train_ratio)
     n_val = int(n * val_ratio)
-    # Test gets the remainder, so ratios sum to exactly n
     train = items[:n_train]
     val = items[n_train:n_train + n_val]
     test = items[n_train + n_val:]
     return train, val, test
 
 def clear_destination_folders(dest_dir, class_names):
-    """Empty train/val/test class folders. Use cautiously."""
     for split in ['train', 'val', 'test']:
         for cls in class_names:
             folder = os.path.join(dest_dir, split, cls)
@@ -87,11 +58,7 @@ def clear_destination_folders(dest_dir, class_names):
             else:
                 os.makedirs(folder, exist_ok=True)
 
-# =========================
-# MAIN
-# =========================
 def main():
-    # Sanity-check ratios
     total_ratio = TRAIN_RATIO + VAL_RATIO + TEST_RATIO
     assert abs(total_ratio - 1.0) < 0.001, f"Ratios must sum to 1.0, got {total_ratio}"
 
@@ -99,6 +66,7 @@ def main():
     print(f"STRATIFIED SPLIT: {TRAIN_RATIO:.0%}/{VAL_RATIO:.0%}/{TEST_RATIO:.0%}")
     print("=" * 70)
     print(f"Seed: {SEED}")
+    print(f"Classes: {CLASS_NAMES}")
     print(f"Source: {SOURCE_DIR}")
     print(f"Destination: {DEST_DIR}\n")
 
@@ -108,12 +76,7 @@ def main():
         print("Clearing destination folders...")
         clear_destination_folders(DEST_DIR, CLASS_NAMES)
 
-    # =========================
-    # COLLECT FILES BY (CLASS, SOURCE)
-    # This is the stratification key — we split within each combination
-    # to maintain both class and camera balance across train/val/test.
-    # =========================
-    buckets = defaultdict(list)  # (class, source) -> [filenames]
+    buckets = defaultdict(list)
     class_totals = Counter()
 
     for cls in CLASS_NAMES:
@@ -138,29 +101,18 @@ def main():
         print(f"  {cls:<10} {src:<12} {len(files):>5} images")
     print()
 
-    # =========================
-    # SPLIT WITHIN EACH BUCKET
-    # =========================
     splits = {'train': defaultdict(list), 'val': defaultdict(list), 'test': defaultdict(list)}
 
     for (cls, source), files in buckets.items():
-        # Shuffle within bucket using the seeded RNG
         files_shuffled = files.copy()
         random.shuffle(files_shuffled)
-
-        # Split this bucket
         train_files, val_files, test_files = stratified_split(
             files_shuffled, TRAIN_RATIO, VAL_RATIO, TEST_RATIO
         )
-
         splits['train'][cls].extend(train_files)
         splits['val'][cls].extend(val_files)
         splits['test'][cls].extend(test_files)
 
-    # =========================
-    # COPY FILES TO SPLIT FOLDERS
-    # Using copy (not move) so dataset/raw/ stays as source of truth.
-    # =========================
     print("Copying files to split folders...")
     copy_counts = {'train': Counter(), 'val': Counter(), 'test': Counter()}
 
@@ -175,9 +127,6 @@ def main():
                 shutil.copy2(src_path, dst_path)
                 copy_counts[split_name][cls] += 1
 
-    # =========================
-    # SPLIT SUMMARY
-    # =========================
     print()
     print("=" * 70)
     print("SPLIT SUMMARY")
@@ -209,9 +158,6 @@ def main():
               f"val={grand_val/grand_total:.1%} "
               f"test={grand_test/grand_total:.1%}")
 
-    # =========================
-    # VERIFY CAMERA BALANCE PRESERVED
-    # =========================
     print("\nCamera source distribution in each split:")
     print("-" * 70)
     for split_name in ['train', 'val', 'test']:

@@ -1,6 +1,7 @@
 """
 Count images in dataset folders and report class distribution.
 Also detects potential camera/source groups by filename pattern.
+2-CLASS VERSION: healthy / defective
 """
 import os
 import re
@@ -10,19 +11,16 @@ from collections import Counter, defaultdict
 # CONFIG
 # =========================
 DATASET_DIR = "../dataset/raw"
-CLASS_FOLDERS = ['healthy', 'minor', 'major', '_ambiguous']
+CLASS_FOLDERS = ['healthy', 'defective', '_ambiguous']
 IMAGE_EXTENSIONS = ('.jpg', '.jpeg', '.png')
 
-# Filename patterns that suggest different cameras/collection setups.
-# Add more as you see them.
 SOURCE_PATTERNS = {
     'phone_IMG': re.compile(r'^IMG_\d+', re.IGNORECASE),
     'lumix_P10': re.compile(r'^P\d{7}', re.IGNORECASE),
-    'other': re.compile(r'.*'),  # catch-all
+    'other': re.compile(r'.*'),
 }
 
 def detect_source(filename):
-    """Guess which camera/source produced a file based on naming pattern."""
     for source_name, pattern in SOURCE_PATTERNS.items():
         if source_name == 'other':
             continue
@@ -41,7 +39,7 @@ def main():
 
     total_images = 0
     class_counts = {}
-    source_breakdown = defaultdict(lambda: Counter())  # class -> {source: count}
+    source_breakdown = defaultdict(lambda: Counter())
 
     for class_folder in CLASS_FOLDERS:
         folder_path = os.path.join(DATASET_DIR, class_folder)
@@ -59,25 +57,19 @@ def main():
             source = detect_source(f)
             source_breakdown[class_folder][source] += 1
 
-    # =========================
-    # OVERALL COUNTS
-    # =========================
     print(f"\nTotal images: {total_images}")
     print("\nClass distribution:")
     print("-" * 70)
     for cls in CLASS_FOLDERS:
         count = class_counts.get(cls, 0)
         pct = (count / total_images * 100) if total_images > 0 else 0
-        bar = "#" * int(pct / 2)  # simple text bar
+        bar = "#" * int(pct / 2)
         print(f"  {cls:<15} {count:>5} ({pct:>5.1f}%)  {bar}")
 
-    # =========================
-    # TARGET VS ACTUAL
-    # =========================
     print("\nTarget vs Actual (excluding _ambiguous):")
     print("-" * 70)
-    labeled_total = sum(class_counts.get(c, 0) for c in ['healthy', 'minor', 'major'])
-    targets = {'healthy': 0.40, 'minor': 0.34, 'major': 0.26}
+    labeled_total = sum(class_counts.get(c, 0) for c in ['healthy', 'defective'])
+    targets = {'healthy': 0.40, 'defective': 0.60}
     for cls, target_pct in targets.items():
         actual = class_counts.get(cls, 0)
         actual_pct = (actual / labeled_total * 100) if labeled_total > 0 else 0
@@ -87,10 +79,6 @@ def main():
         print(f"  {cls:<10} target: {target_count:>4} ({target_pct*100:.0f}%)  "
               f"actual: {actual:>4} ({actual_pct:.1f}%)  diff: {sign}{diff}")
 
-    # =========================
-    # SOURCE / CAMERA BREAKDOWN
-    # Critical: detects if classes are correlated with camera source
-    # =========================
     print("\nSource (camera) breakdown by class:")
     print("-" * 70)
     all_sources = sorted({s for breakdown in source_breakdown.values() for s in breakdown})
@@ -107,15 +95,10 @@ def main():
             row += f"  {count:>4} ({pct:>4.1f}%)"
         print(row)
 
-    # =========================
-    # WARNINGS
-    # =========================
     print("\nDiagnostic warnings:")
     print("-" * 70)
-
     warnings = []
 
-    # Ambiguous ratio
     ambig = class_counts.get('_ambiguous', 0)
     if total_images > 0 and ambig / total_images > 0.10:
         warnings.append(
@@ -123,19 +106,17 @@ def main():
             f"({ambig/total_images*100:.1f}%). Consider tightening protocol."
         )
 
-    # Class imbalance check
     if labeled_total > 0:
-        max_class = max(class_counts.get(c, 0) for c in ['healthy', 'minor', 'major'])
-        min_class = min(class_counts.get(c, 0) for c in ['healthy', 'minor', 'major'])
+        max_class = max(class_counts.get(c, 0) for c in ['healthy', 'defective'])
+        min_class = min(class_counts.get(c, 0) for c in ['healthy', 'defective'])
         if max_class > 0 and min_class / max_class < 0.30:
             warnings.append(
                 f"Severe class imbalance: smallest class is "
                 f"{min_class/max_class*100:.0f}% of largest. Class weights will help."
             )
 
-    # Camera-class correlation check (the shortcut learning risk)
     if len(all_sources) > 1 and labeled_total > 0:
-        for cls in ['healthy', 'minor', 'major']:
+        for cls in ['healthy', 'defective']:
             if class_counts.get(cls, 0) == 0:
                 continue
             counts = source_breakdown[cls]

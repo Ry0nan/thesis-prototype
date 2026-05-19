@@ -9,30 +9,22 @@ from sklearn.metrics import (
     confusion_matrix,
     precision_recall_fscore_support,
 )
+from collections import Counter
 
 # =========================
 # CONFIG
 # =========================
 TEST_DIR = "../dataset/test"
-MODEL_PATH = "../models/resnet_kamias.pth"
-NUM_CLASSES = 3
+MODEL_PATH = "../models/resnet_baseline.pth"
+NUM_CLASSES = 2
 IMG_SIZE = 224
 BATCH_SIZE = 16
 
-# Identifier used in the output report (helps you compare runs).
-# Examples: "Supervised Baseline", "SSL Iteration 1", "SSL Final"
 EXPERIMENT_NAME = "Supervised Baseline"
 
-# =========================
-# DEVICE
-# =========================
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}\n")
 
-# =========================
-# TRANSFORM
-# Must match val_transform in train_resnet.py exactly.
-# =========================
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
@@ -42,9 +34,6 @@ transform = transforms.Compose([
     transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
 ])
 
-# =========================
-# LOAD TEST DATA
-# =========================
 if not os.path.exists(TEST_DIR):
     print(f"Test directory not found: {TEST_DIR}")
     exit(1)
@@ -55,13 +44,9 @@ test_loader = DataLoader(test_data, batch_size=BATCH_SIZE, shuffle=False)
 class_names = test_data.classes
 print(f"Test classes: {class_names}")
 print(f"Test samples: {len(test_data)}")
-from collections import Counter
 test_dist = Counter([label for _, label in test_data.samples])
 print(f"Test distribution: {dict({class_names[i]: test_dist[i] for i in range(NUM_CLASSES)})}\n")
 
-# =========================
-# LOAD MODEL
-# =========================
 model = models.resnet18(weights=None)
 model.fc = nn.Linear(model.fc.in_features, NUM_CLASSES)
 model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
@@ -69,9 +54,6 @@ model = model.to(device)
 model.eval()
 print(f"Model loaded from: {MODEL_PATH}\n")
 
-# =========================
-# RUN EVALUATION
-# =========================
 all_preds = []
 all_labels = []
 all_confidences = []
@@ -91,18 +73,13 @@ all_preds = np.array(all_preds)
 all_labels = np.array(all_labels)
 all_confidences = np.array(all_confidences)
 
-# =========================
-# REPORT
-# =========================
 print("=" * 70)
 print(f"EVALUATION REPORT: {EXPERIMENT_NAME}")
 print("=" * 70)
 
-# Overall accuracy
 accuracy = (all_preds == all_labels).mean() * 100
 print(f"\nOverall Accuracy: {accuracy:.2f}% ({(all_preds == all_labels).sum()}/{len(all_labels)})")
 
-# Per-class precision, recall, F1 — the metrics your thesis promises
 print("\nPer-Class Metrics:")
 print("-" * 70)
 print(classification_report(
@@ -112,7 +89,6 @@ print(classification_report(
     zero_division=0,
 ))
 
-# Macro vs weighted F1 — important distinction for imbalanced data
 precision, recall, f1, support = precision_recall_fscore_support(
     all_labels, all_preds, average=None, zero_division=0
 )
@@ -122,21 +98,19 @@ weighted_f1 = (f1 * support).sum() / support.sum()
 print(f"Macro F1 (unweighted avg):    {macro_f1:.4f}")
 print(f"Weighted F1 (by class size):  {weighted_f1:.4f}")
 print("  -> Macro F1 weights all classes equally (good for imbalanced data)")
-print("  -> Use Macro F1 as your headline number for the thesis comparison\n")
+print("  -> Use Macro F1 as the headline number for the thesis comparison\n")
 
-# Confusion matrix
 print("Confusion Matrix:")
 print("-" * 70)
 cm = confusion_matrix(all_labels, all_preds)
-header = "Actual \\ Pred  " + "  ".join(f"{name:>8}" for name in class_names)
+header = "Actual \\ Pred  " + "  ".join(f"{name:>10}" for name in class_names)
 print(header)
 for i, name in enumerate(class_names):
-    row = f"{name:<14} " + "  ".join(f"{cm[i, j]:>8}" for j in range(NUM_CLASSES))
+    row = f"{name:<14} " + "  ".join(f"{cm[i, j]:>10}" for j in range(NUM_CLASSES))
     print(row)
 print("\nReading guide: rows = actual class, columns = predicted class.")
-print("  Diagonal = correct. Off-diagonal = where the model confuses classes.\n")
+print("  Diagonal = correct. Off-diagonal = misclassifications.\n")
 
-# Confidence breakdown
 print("Confidence Analysis:")
 print("-" * 70)
 correct_mask = all_preds == all_labels
