@@ -20,7 +20,7 @@ from collections import Counter, defaultdict
 TRAIN_DIR = "../dataset/train"
 LABELED_DIR = "../dataset/train_labeled"
 UNLABELED_DIR = "../dataset/unlabeled"
-AMBIGUOUS_DIR = "../dataset/raw/_ambiguous"
+AMBIGUOUS_DIR = "../dataset/cropped/_ambiguous"
 
 CLASS_NAMES = ['healthy', 'defective']
 IMAGE_EXTENSIONS = ('.jpg', '.jpeg', '.png')

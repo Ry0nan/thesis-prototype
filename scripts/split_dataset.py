@@ -13,7 +13,7 @@ from collections import defaultdict, Counter
 # =========================
 # CONFIG
 # =========================
-SOURCE_DIR = "../dataset/raw"
+SOURCE_DIR = "../dataset/cropped"
 DEST_DIR = "../dataset"
 CLASS_NAMES = ['healthy', 'defective']
 IMAGE_EXTENSIONS = ('.jpg', '.jpeg', '.png')
