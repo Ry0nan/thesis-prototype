@@ -15,12 +15,12 @@ from collections import Counter
 # CONFIG
 # =========================
 TEST_DIR = "../dataset/test"
-MODEL_PATH = "../models/resnet_ssl.pth"
+MODEL_PATH = "../models/resnet_baseline.pth"
 NUM_CLASSES = 2
 IMG_SIZE = 224
 BATCH_SIZE = 16
 
-EXPERIMENT_NAME = "Semi-Supervised (SSL)"
+EXPERIMENT_NAME = "Supervised Baseline"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}\n")

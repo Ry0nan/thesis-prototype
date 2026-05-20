@@ -26,7 +26,7 @@ if torch.cuda.is_available():
 #   "baseline" -> labeled 25% only (supervised baseline)
 #   "ssl"      -> labeled + accumulated pseudo-labels (used by pseudo_label.py)
 #   "full"     -> full training set (upper-bound sanity check)
-MODE = "baseline"
+MODE = "full"
 
 if MODE == "baseline":
     TRAIN_DIR = "../dataset/train_labeled"
