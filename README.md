@@ -54,7 +54,7 @@ photo ─▶ YOLOv8n detector ─▶ crop the fruit ─▶ ResNet18 classifier �
 ## Repository structure
 
 ```
-Prototype/
+kamias-defect-detection/
 ├── app.py                     # Gradio demo: upload a photo → YOLO crop → prediction
 ├── requirements.txt           # pinned dependencies (see Setup)
 ├── models/                    # trained weights (see "Data & weights" note below)
@@ -94,37 +94,29 @@ Prototype/
 
 ## Setup
 
-**Requirements:** Python 3.10+, an NVIDIA GPU with CUDA (CPU works but is slower).
+**Requirements:** Python 3.11–3.13 (developed on 3.13), an NVIDIA GPU with CUDA 12.8
+(CPU works but is slower).
 
-This project was developed and tested on:
-
-- Windows 11, NVIDIA GeForce RTX 5060 (8 GB, Blackwell `sm_120`)
-- PyTorch 2.11.0 + cu128, torchvision 0.26.0 + cu128, CUDA 12.8
+Developed and tested on Windows 11, NVIDIA GeForce RTX 5060 (8 GB, Blackwell `sm_120`),
+PyTorch 2.11.0 + cu128, CUDA 12.8.
 
 > **RTX 50-series note.** Blackwell GPUs (`sm_120`) require the CUDA 12.8 PyTorch build
-> (`cu128`) or newer. Older CUDA wheels will not run on this hardware.
+> (`cu128`) or newer. `requirements.txt` already pins this build. For a different CUDA
+> version or a CPU-only setup, edit the two `torch` lines at the top of that file — the
+> comments there explain how.
 
 ```powershell
 # 1. Clone and enter the project
-git clone https://github.com/Ry0nan/thesis-prototype.git
-cd thesis-prototype
+git clone https://github.com/Ry0nan/kamias-defect-detection.git
+cd kamias-defect-detection
 
 # 2. Create and activate a virtual environment
 python -m venv venv
 .\venv\Scripts\Activate.ps1        # Windows PowerShell
-# source venv/bin/activate          # macOS / Linux
+# source venv/bin/activate         # macOS / Linux
 
-# 3. Install PyTorch for your CUDA version (RTX 50-series = cu128)
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
-
-# 4. Install the remaining dependencies
+# 3. Install all dependencies (this includes the CUDA 12.8 PyTorch build)
 pip install -r requirements.txt
-```
-
-To regenerate a pinned `requirements.txt` from your working environment:
-
-```powershell
-pip freeze > requirements.txt
 ```
 
 ---
