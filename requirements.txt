@@ -1,0 +1,39 @@
+# ==========================================================================
+# Kamias Surface Defect Detection - Python dependencies
+#
+# PyTorch is pinned to the CUDA 12.8 build, which is REQUIRED for RTX 50-series
+# (Blackwell, sm_120) GPUs. The --extra-index-url line lets a single
+#     pip install -r requirements.txt
+# fetch that build directly.
+#
+# Using a different CUDA version, or CPU only? Replace "cu128" below with your
+# version (e.g. cu121), or delete the two torch lines and install PyTorch
+# separately per the README, then run this file for the rest.
+#
+# Developed and tested on Python 3.13.
+# ==========================================================================
+ 
+--extra-index-url https://download.pytorch.org/whl/cu128
+ 
+# --- Deep learning ---
+torch==2.11.0+cu128
+torchvision==0.26.0+cu128
+ 
+# --- Object detection (YOLOv8) ---
+ultralytics==8.4.43
+ 
+# --- Metrics ---
+scikit-learn==1.8.0
+ 
+# --- Numerics, data, plotting ---
+numpy==2.4.4
+pandas==3.0.3
+matplotlib==3.10.9
+ 
+# --- Image I/O ---
+pillow==12.2.0
+opencv-python==4.13.0.92
+pyyaml==6.0.3
+ 
+# --- Demo web UI ---
+gradio==6.19.0

@@ -9,6 +9,8 @@ The core contribution is a **semi-supervised learning (SSL)** framework: using o
 matches — and slightly exceeds — a fully supervised model trained on 1,014 labels,
 while cutting the number of **missed defects by 60%**.
 
+![Kamias defect detection demo — a defective fruit classified with high confidence](assets/demo.png)
+
 > Undergraduate thesis, BS Computer Science, Mapúa University — Group 16.
 > Ryonan Owen Ferrer, Jean Rhyan L. Lopez, Gian Carlo B. Palma.
 > Adviser: Joel C. De Goma.
@@ -104,8 +106,8 @@ This project was developed and tested on:
 
 ```powershell
 # 1. Clone and enter the project
-git clone https://github.com/Ry0nan/<repo-name>.git
-cd <repo-name>
+git clone https://github.com/Ry0nan/thesis-prototype.git
+cd thesis-prototype
 
 # 2. Create and activate a virtual environment
 python -m venv venv
