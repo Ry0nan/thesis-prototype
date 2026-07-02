@@ -20,7 +20,7 @@ NUM_CLASSES = 2
 IMG_SIZE = 224
 BATCH_SIZE = 16
 
-EXPERIMENT_NAME = "Supervised Baseline"
+EXPERIMENT_NAME = "Full Supervised (Upper Bound)"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}\n")
