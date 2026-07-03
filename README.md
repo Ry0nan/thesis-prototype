@@ -94,7 +94,7 @@ kamias-defect-detection/
 
 ## Setup
 
-**Requirements:** Python 3.11–3.13 (developed on 3.13), an NVIDIA GPU with CUDA 12.8
+**Requirements:** Python 3.11–3.14 (developed on 3.14), an NVIDIA GPU with CUDA 12.8
 (CPU works but is slower).
 
 Developed and tested on Windows 11, NVIDIA GeForce RTX 5060 (8 GB, Blackwell `sm_120`),

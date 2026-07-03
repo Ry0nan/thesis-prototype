@@ -15,7 +15,7 @@ from collections import Counter
 # CONFIG
 # =========================
 TEST_DIR = "../dataset/test"
-MODEL_PATH = "../models/resnet_baseline.pth"
+MODEL_PATH = "../models/resnet_full.pth"
 NUM_CLASSES = 2
 IMG_SIZE = 224
 BATCH_SIZE = 16
