@@ -37,11 +37,11 @@ YOLO_PATH = MODELS_DIR / "yolov8_kamias.pt"
 
 
 RESNET_MODELS = {
-    "SSL - best model (92.34%)": {
-        "file": "resnet_ssl.pth",
-        "acc": "92.34%",
-        "macro_f1": "0.9224",
-        "trained_on": "252 real labels + pseudo-labeled pool (grew to 1,037)",
+    "SSL - best model (90.09%)": {
+    "file": "resnet_ssl.pth",
+    "acc": "90.09%",
+    "macro_f1": "0.9004",
+    "trained_on": "252 real labels + pseudo-labeled pool (grew to 1,010)",
     },
     "Baseline (89.19%)": {
         "file": "resnet_baseline.pth",
@@ -129,7 +129,7 @@ def detect_and_crop(pil_image):
         return None, None
 
     confs = boxes.conf.cpu().numpy()
-    best = int(confs.argmax())                                  # most confident box
+    best = int(confs.argmax())                                  
     x1, y1, x2, y2 = boxes.xyxy[best].cpu().numpy().astype(int)
 
     w, h = pil_image.size                                       # clamp to image edges
@@ -192,7 +192,7 @@ def run_pipeline(image, model_choice):
 # =========================================================================
 # GRADIO UI
 # =========================================================================
-DEFAULT_MODEL = "SSL - best model (92.34%)"
+DEFAULT_MODEL = "SSL - best model (90.09%)"
 
 with gr.Blocks(title="Kamias Defect Detection") as demo:
     gr.Markdown(

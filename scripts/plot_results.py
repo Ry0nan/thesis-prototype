@@ -28,8 +28,8 @@ os.makedirs(OUT_DIR, exist_ok=True)
 def plot_model_comparison():
     models_data = {
         "Baseline (252)": {"macro_f1": 0.8915, "defective_f1": 0.898, "healthy_f1": 0.885},
-        "SSL (1,037)":    {"macro_f1": 0.9224, "defective_f1": 0.931, "healthy_f1": 0.914},
-        "Full (1,014)":   {"macro_f1": 0.9051, "defective_f1": 0.911, "healthy_f1": 0.900},
+        "SSL (1,010)":    {"macro_f1": 0.9004, "defective_f1": 0.9076, "healthy_f1": 0.8932},
+        "Full (1,014)":   {"macro_f1": 0.9051, "defective_f1": 0.9106, "healthy_f1": 0.8995},
     }
 
     labels = list(models_data.keys())

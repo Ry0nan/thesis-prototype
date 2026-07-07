@@ -1,4 +1,6 @@
 import os
+os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"  # required for deterministic CUDA matmul
+
 import random
 import numpy as np
 from collections import Counter
@@ -18,6 +20,9 @@ np.random.seed(SEED)
 random.seed(SEED)
 if torch.cuda.is_available():
     torch.cuda.manual_seed_all(SEED)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+torch.use_deterministic_algorithms(True, warn_only=True)
 
 # =========================
 # CONFIG
